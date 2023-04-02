@@ -177,7 +177,7 @@
     </v-app-bar>
 
     <v-main>
-      <v-container class="fill-height" fluid>
+      <v-container class="" fluid style="height: 100%;">
         <v-row align="center" justify="center">
           <v-slide-y-transition mode="out-in">
             <router-view />
