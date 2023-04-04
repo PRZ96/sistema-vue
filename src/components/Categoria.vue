@@ -29,6 +29,9 @@
                       <v-col cols="12" sm="12" md="12">
                         <v-text-field v-model="editedItem.descripcion" label="Descripción"></v-text-field>
                       </v-col>
+                      <v-col cols="12" sm="12" md="12" v-show="valida"> <!-- Muestra este mensaje solo cuando valida es true -->
+                        <div class="red--text" v-for="v in validaMensaje" :key="v" v-text="v"></div>
+                      </v-col>
                     </v-row>
                   </v-container>
                 </v-card-text>
@@ -86,12 +89,15 @@ export default {
       nombre: '',
       descripcion: '',
      editedItem: {
-
+      nombre: '',
+      descripcion: '',
      },
      defaultItem: {
       nombre: '',
       descripcion: '',
      },
+     valida: 0,
+     validaMensaje: [],
     };
   },
   computed: {
@@ -121,9 +127,10 @@ export default {
     },
 
     editItem(item) {
-      this.editedIndex = this.categorias.indexOf(item)
+      /* this.editedIndex = this.categorias.indexOf(item) */
       this.editedItem = Object.assign({}, item)
-      this.dialog = true
+      this.dialog = true;
+      this.editedIndex = 1; //Indicar que lo que quiero es editar
     },
 
     deleteItem(item) {
@@ -133,12 +140,16 @@ export default {
 
     close() {
       this.dialog = false;
+
       /* this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem)
         this.editedIndex = -1
       }) */
+
       this.editedItem = Object.assign({}, this.defaultItem);
       this.editedIndex = -1;
+      this.valida = 0;
+      this.validaMensaje = [];
     },
 
     save() {
@@ -150,14 +161,24 @@ export default {
       this.close()
     },
     limpiar() {
-      this._id = '';
-      this.nombre = '';
-      this.descripcion = '';
+      this.editedItem._id = '';
     },
     guardar() {
       let me = this;
+      if (this.validar()) {
+        return;
+      }
       if(this.editedIndex > -1) {
         //Editar los datos del registro
+        axios.put('categoria/update', { '_id': this.editedItem._id, 'nombre': this.editedItem.nombre, 'descripcion': this.editedItem.descripcion })
+        .then(function(response) {
+          me.limpiar();
+          me.close();
+          me.listar();
+        }) 
+        .catch(function(error){
+          console.log(error);
+        });
       } else {
         //Guardar un nuevo registro
         axios.post('categoria/add', { 'nombre': this.editedItem.nombre, 'descripcion': this.editedItem.descripcion })
@@ -170,6 +191,22 @@ export default {
           console.log(error);
         });
       }
+      this.close();
+    },
+    validar() {
+      // Valida si el nombre o la descripcion de la categoria ingresada son dentro de los limites correctos
+      this.valida = 0;
+      this.validaMensaje = [];
+      if(this.editedItem.nombre.length < 1 || this.editedItem.nombre.length > 50 ) {
+        this.validaMensaje.push('El nombre de la categoria debe tener entre 1 y 50 caracteres');
+      }
+      if(this.editedItem.descripcion.length > 255 ) {
+        this.validaMensaje.push('La descripción de la categoria no debe tener más de 255 caracteres');
+      }
+      if(this.validaMensaje.length) {
+        this.valida = 1;
+      }
+      return this.valida;
     },
   },
 };
